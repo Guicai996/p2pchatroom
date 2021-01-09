@@ -2,6 +2,8 @@
 #include <iostream>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <thread>
+#include <mutex>
 
 typedef unsigned int uint;
 constexpr auto MAX_CLIENT = 10;
@@ -43,10 +45,13 @@ class p2pserver :
 	public mysocket
 {
 private:
+	void Bind(uint port);
+	//void process_accept();
+	std::thread p1();
 
 public:
 	p2pserver(uint port);
-	void Bind(uint port);
+	
 	//~p2pserver();
 
 

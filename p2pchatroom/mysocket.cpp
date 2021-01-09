@@ -61,6 +61,7 @@ void p2pclient::Connect_server(std::string& ip, int& port)
 p2pserver::p2pserver(uint port)
 {
 	this->Bind(port);
+
 }
 
 void p2pserver::Bind(uint port)
@@ -74,3 +75,4 @@ void p2pserver::Bind(uint port)
 		exit(1);
 	}
 }
+
