@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
 	p2pclient chatroom(authorized_ip, authorized_port);
 
 	thread p1(process_connection, chatroom);
+	thread* p2 = new thread(process_connection);
 
 	return 0;
 }

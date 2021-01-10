@@ -4,14 +4,24 @@
 #include <WS2tcpip.h>
 #include <thread>
 #include <mutex>
+#include <vector>
+#include <windows.h>
+#include <random>
 
 typedef unsigned int uint;
 constexpr auto MAX_CLIENT = 10;
 
-struct ip_port
+struct p2pClientInfo
 {
-	char ip[15];
-	uint16_t port;
+	SOCKET sockets[MAX_CLIENT];
+	sockaddr_in addrs_list[MAX_CLIENT];
+	int addrs_len[MAX_CLIENT];
+	uint clients_num;
+	std::mutex mutex_num;
+	std::mutex mutex_list;
+	std::vector<std::thread*> threads;
+
+	p2pClientInfo();
 };
 
 class mysocket
@@ -22,9 +32,8 @@ private:
 protected:
 	sockaddr_in serAddr;
 	SOCKET server_socket;
-	SOCKET p2pclient_sockets[MAX_CLIENT];
-	ip_port client_listp[MAX_CLIENT];
-	uint clients_num;
+	p2pClientInfo clients;
+
 	char recvbuff[512];
 	char sendbuff[512];
 public:
@@ -37,6 +46,10 @@ class p2pclient :
 private:
 	void Getclientslist();
 	void Connect_server(std::string& ip, int& port);
+	void CreateLocalSocket();
+	void BindPeerPort();
+	SOCKET local_socket;
+	sockaddr_in peer;
 public:
 	p2pclient(std::string& ip, int& port);
 };
@@ -46,13 +59,15 @@ class p2pserver :
 {
 private:
 	void Bind(uint port);
-	//void process_accept();
-	std::thread p1();
+	void Listen();
+	void WaitConnec();
+	void Thread_ProcConnec(uint Client_No);
+	uint myid;
 
 public:
 	p2pserver(uint port);
 	
-	//~p2pserver();
+	~p2pserver();
 
 
 };

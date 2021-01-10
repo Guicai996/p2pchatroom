@@ -11,6 +11,5 @@ int main(int argc, char* argv[])
 {
 	p2pserver chatserver(8888);
 
-
 	return 0;
 }
