@@ -38,6 +38,7 @@ protected:
 	char sendbuff[512];
 public:
 	mysocket();
+	~mysocket();
 };
 
 class p2pclient :
@@ -50,8 +51,10 @@ private:
 	void BindPeerPort();
 	SOCKET local_socket;
 	sockaddr_in peer;
+	uint myid;
 public:
 	p2pclient(std::string& ip, int& port);
+	~p2pclient();
 };
 
 class p2pserver :
@@ -62,7 +65,6 @@ private:
 	void Listen();
 	void WaitConnec();
 	void Thread_ProcConnec(uint Client_No);
-	uint myid;
 
 public:
 	p2pserver(uint port);

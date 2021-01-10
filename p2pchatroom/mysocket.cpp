@@ -36,8 +36,16 @@ void p2pclient::Getclientslist()
 	send(server_socket, (char*)&peer.sin_port, sizeof(peer.sin_port), 0);
 	recv(server_socket, (char*)&clients.clients_num, sizeof(uint), 0);
 	recv(server_socket, (char*)clients.addrs_list, sizeof(clients.addrs_list), 0);
+	for (int i = 0; i < clients.clients_num; ++i)
+	{
+		if (clients.addrs_list[i].sin_addr.S_un.S_addr == peer.sin_addr.S_un.S_addr &&
+			clients.addrs_list[i].sin_port == peer.sin_port) {
+			myid = i;
+			break;
+		}
+	}
+	myid = clients.clients_num;
 	while (true) {
-		Sleep(1000);
 		recv(server_socket, (char*)&clients.clients_num, sizeof(uint), 0);
 		recv(server_socket, (char*)clients.addrs_list, sizeof(clients.addrs_list), 0);
 	}
@@ -117,7 +125,8 @@ void p2pserver::WaitConnec()
 			/*坑位，改端口号是否会影响TCP的链接*/
 			recv(server_socket, (char*)&clients.addrs_list[clients.clients_num].sin_port, sizeof(USHORT), 0);
 			clients.mutex_num.lock();
-			std::thread* p1 = new std::thread(&Thread_ProcConnec, this, clients.clients_num++);
+			std::thread* p1 = new std::thread(&p2pserver::Thread_ProcConnec, this, clients.clients_num);
+			clients.clients_num++;
 			clients.mutex_num.unlock();
 			clients.threads.push_back(p1);
 		}
@@ -134,10 +143,12 @@ void p2pserver::Thread_ProcConnec(uint clients_No)
 		inet_ntoa(clients.addrs_list[clients_No].sin_addr), 
 		clients.addrs_list[clients_No].sin_port);
 	std::cout << msg << std::endl;
-	clients.mutex_num.lock();
-	send(clients.sockets[clients_No], (char*)&clients_No, sizeof(uint), 0);
-	send(clients.sockets[clients_No], (char*)&clients.addrs_list, sizeof(clients.addrs_list), 0);
-	clients.mutex_num.unlock();
+
+	for (int i = 0; i <= clients_No; ++i) {
+		send(clients.sockets[i], (char*)&clients.clients_num, sizeof(uint), 0);
+		send(clients.sockets[i], (char*)&clients.addrs_list, sizeof(clients.addrs_list), 0);
+	}
+
 }
 
 p2pserver::p2pserver(uint port)
