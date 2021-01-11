@@ -31,11 +31,16 @@ void mysocket::CreateServerSocket()
 	}
 }
 
+/*---------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------*/
+
 void p2pclient::Getclientslist()
 {
 	send(server_socket, (char*)&peer.sin_port, sizeof(peer.sin_port), 0);
+	clients.mutex_list.lock();
 	recv(server_socket, (char*)&clients.clients_num, sizeof(uint), 0);
 	recv(server_socket, (char*)clients.addrs_list, sizeof(clients.addrs_list), 0);
+	clients.mutex_list.unlock();
 	for (int i = 0; i < clients.clients_num; ++i)
 	{
 		if (clients.addrs_list[i].sin_addr.S_un.S_addr == peer.sin_addr.S_un.S_addr &&
@@ -45,10 +50,112 @@ void p2pclient::Getclientslist()
 		}
 	}
 	myid = clients.clients_num;
+}
+
+void p2pclient::Updateclientslist()
+{
 	while (true) {
+		clients.mutex_list.lock();
 		recv(server_socket, (char*)&clients.clients_num, sizeof(uint), 0);
 		recv(server_socket, (char*)clients.addrs_list, sizeof(clients.addrs_list), 0);
+		clients.mutex_list.unlock();
 	}
+}
+
+void p2pclient::ShowUI()
+{
+	int num;
+	int sendid;
+	std::string msg;
+	std::ostringstream temp;
+	mutex_showmsg.lock();
+	std::cout << "尊敬的client." << myid << " ，欢迎使用！\n\n";
+	std::cout << "1.获取当前对等端；\n";
+	std::cout << "2.指定一个对等端发送消息；\n";
+	std::cout << "3.退出；\n\n";
+	std::cout << "请输入一个数字并按回车选择功能：";
+	current_cmdstatue = 1;
+	mutex_showmsg.unlock();
+
+	while(true){
+		std::cin >> num;
+		switch (num)
+		{
+		case 1:
+			mutex_showmsg.lock();
+			for (int i = 0; i < clients.clients_num; ++i)
+				std::cout << "client." << i << ' ';
+			std::cout << std::endl;
+			std::cout << "请输入一个数字并按回车选择功能：";
+			current_cmdstatue = 1;
+			mutex_showmsg.unlock();
+			break;
+		case 2:
+			mutex_showmsg.lock();
+			std::cout << "你想给谁发消息: ";
+			current_cmdstatue = 2;
+			mutex_showmsg.unlock();
+			std::cin >> sendid;
+			mutex_showmsg.lock();
+			std::cout << "[To client." << sendid << "]: ";
+
+			temp << "[To client." << sendid << "]: ";
+			recover_cout = temp.str();
+			current_cmdstatue = 3;
+
+			mutex_showmsg.unlock();
+			std::cin >> msg;
+			Sendmsgto(sendid, msg);
+			mutex_showmsg.lock();
+			std::cout << "请输入一个数字并按回车选择功能：";
+			current_cmdstatue = 1;
+			mutex_showmsg.unlock();
+			break;
+		case 3:
+			exit(0);
+		}
+	}
+}
+
+void p2pclient::RecvMSGthread()
+{
+	char MSGbuff[500];
+	sockaddr_in MSGfrom;
+	int fromID = 999;
+	int MSGfromsize = sizeof(MSGfrom);
+	while (true) {
+		if (recvfrom(local_socket, MSGbuff, sizeof(MSGbuff), 0, (sockaddr*)&MSGfrom, &MSGfromsize)) {
+			for (int i = 0; i < clients.clients_num; ++i) {
+				if (clients.addrs_list[i].sin_addr.S_un.S_addr == peer.sin_addr.S_un.S_addr &&
+					clients.addrs_list[i].sin_port == peer.sin_port) {
+					fromID = i;
+					break;
+				}
+			}
+			mutex_showmsg.lock();
+			std::cout << '\r' << MSGbuff << std::endl;
+			switch (current_cmdstatue)
+			{
+			case 1:
+				std::cout << "请输入一个数字并按回车选择功能：";
+				break;
+			case 2:
+				std::cout << "你想给谁发消息: ";
+				break;
+			case 3:
+				std::cout << recover_cout;
+				break;
+			default:
+				std::cout << '\n';
+			}
+			mutex_showmsg.unlock();
+		}
+	}
+}
+
+void p2pclient::Sendmsgto(int id, std::string& msg) 
+{
+	sendto(this->local_socket, msg.c_str(), msg.length(), 0, (sockaddr*)&clients.addrs_list[id], sizeof(sockaddr_in));
 }
 
 void p2pclient::CreateLocalSocket()
@@ -88,11 +195,25 @@ p2pclient::p2pclient(std::string& ip, int& port)
 	this->BindPeerPort();
 	this->Connect_server(ip, port);
 	this->Getclientslist();
+
+	auto t = new std::thread(&p2pclient::Updateclientslist, this);
+	clients.threads.push_back(t);
+
+	t = new std::thread(&p2pclient::RecvMSGthread, this);
+	clients.threads.push_back(t);
+	//this->Updateclientslist();
+
+	this->ShowUI();
+
 }
 
 p2pclient::~p2pclient()
 {
 	closesocket(local_socket);
+	for (auto i : clients.threads) {
+		i->join();
+		delete i;
+	}
 }
 
 
@@ -121,9 +242,10 @@ void p2pserver::WaitConnec()
 	std::cout << "waiting for clients..." << std::endl;
 	while (true) {
 		clients.sockets[clients.clients_num] = accept(server_socket, (sockaddr*)(clients.addrs_list + clients.clients_num), clients.addrs_len + clients.clients_num);
+
 		if (clients.sockets[clients.clients_num] != SOCKET_ERROR) {
 			/*坑位，改端口号是否会影响TCP的链接*/
-			recv(server_socket, (char*)&clients.addrs_list[clients.clients_num].sin_port, sizeof(USHORT), 0);
+			recv(clients.sockets[clients.clients_num], (char*)&clients.addrs_list[clients.clients_num].sin_port, sizeof(USHORT), 0);
 			clients.mutex_num.lock();
 			std::thread* p1 = new std::thread(&p2pserver::Thread_ProcConnec, this, clients.clients_num);
 			clients.clients_num++;
@@ -145,8 +267,10 @@ void p2pserver::Thread_ProcConnec(uint clients_No)
 	std::cout << msg << std::endl;
 
 	for (int i = 0; i <= clients_No; ++i) {
+		clients.mutex_list.lock();
 		send(clients.sockets[i], (char*)&clients.clients_num, sizeof(uint), 0);
 		send(clients.sockets[i], (char*)&clients.addrs_list, sizeof(clients.addrs_list), 0);
+		clients.mutex_list.unlock();
 	}
 
 }

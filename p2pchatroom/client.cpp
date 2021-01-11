@@ -9,7 +9,6 @@ using namespace std;
 
 mutex mutex1;
 
-void process_connection(p2pclient chatroom);
 
 int main(int argc, char* argv[])
 {
@@ -19,8 +18,6 @@ int main(int argc, char* argv[])
 	cin >> authorized_ip >> authorized_port;
 	p2pclient chatroom(authorized_ip, authorized_port);
 
-	thread p1(process_connection, chatroom);
-	thread* p2 = new thread(process_connection);
 
 	return 0;
 }
