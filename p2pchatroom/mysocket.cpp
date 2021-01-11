@@ -49,7 +49,6 @@ void p2pclient::Getclientslist()
 			break;
 		}
 	}
-	myid = clients.clients_num;
 }
 
 void p2pclient::Updateclientslist()
@@ -133,7 +132,8 @@ void p2pclient::RecvMSGthread()
 				}
 			}
 			mutex_showmsg.lock();
-			std::cout << "\r                                           \r" << MSGbuff << std::endl;
+			std::cout << "\r                                           \r";
+			std::cout << "[from client." << fromID << "]: " << MSGbuff << std::endl;
 			switch (current_cmdstatue)
 			{
 			case 1:
@@ -155,7 +155,7 @@ void p2pclient::RecvMSGthread()
 
 void p2pclient::Sendmsgto(int id, std::string& msg) 
 {
-	sendto(this->local_socket, msg.c_str(), msg.length(), 0, (sockaddr*)&clients.addrs_list[id], sizeof(sockaddr_in));
+	sendto(this->local_socket, msg.c_str(), msg.length()+1, 0, (sockaddr*)&clients.addrs_list[id], sizeof(sockaddr_in));
 }
 
 void p2pclient::CreateLocalSocket()
@@ -190,7 +190,7 @@ void p2pclient::BindPeerPort()
 	}
 }
 
-p2pclient::p2pclient(std::string& ip, int& port)
+p2pclient::p2pclient(std::string& ip, int& port) :myid(999)
 {
 	this->CreateLocalSocket();
 	this->BindPeerPort();
