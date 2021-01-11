@@ -41,14 +41,15 @@ void p2pclient::Getclientslist()
 	recv(server_socket, (char*)&clients.clients_num, sizeof(uint), 0);
 	recv(server_socket, (char*)clients.addrs_list, sizeof(clients.addrs_list), 0);
 	clients.mutex_list.unlock();
+
 	for (int i = 0; i < clients.clients_num; ++i)
 	{
-		if (clients.addrs_list[i].sin_addr.S_un.S_addr == peer.sin_addr.S_un.S_addr &&
-			clients.addrs_list[i].sin_port == peer.sin_port) {
+		if (clients.Is_addr_equal(clients.addrs_list[i], peer, m_mode)) {
 			myid = i;
 			break;
 		}
 	}
+
 }
 
 void p2pclient::Updateclientslist()
@@ -112,6 +113,10 @@ void p2pclient::ShowUI()
 			break;
 		case 3:
 			exit(0);
+		default:
+			std::cout << "输入有误！\n";
+			std::cout << "请输入一个数字并按回车选择功能：";
+			break;
 		}
 	}
 }
@@ -125,8 +130,7 @@ void p2pclient::RecvMSGthread()
 	while (true) {
 		if (recvfrom(local_socket, MSGbuff, sizeof(MSGbuff), 0, (sockaddr*)&MSGfrom, &MSGfromsize)) {
 			for (int i = 0; i < clients.clients_num; ++i) {
-				if (clients.addrs_list[i].sin_addr.S_un.S_addr == peer.sin_addr.S_un.S_addr &&
-					clients.addrs_list[i].sin_port == peer.sin_port) {
+				if (clients.Is_addr_equal(clients.addrs_list[i], MSGfrom, m_mode)) {
 					fromID = i;
 					break;
 				}
@@ -190,7 +194,7 @@ void p2pclient::BindPeerPort()
 	}
 }
 
-p2pclient::p2pclient(std::string& ip, int& port) :myid(999)
+p2pclient::p2pclient(std::string& ip, int& port, const int& mode) :myid(999), m_mode(mode)
 {
 	this->CreateLocalSocket();
 	this->BindPeerPort();
@@ -247,6 +251,8 @@ void p2pclient::GetIP()
 		peer.sin_addr.S_un.S_addr = INADDR_ANY;
 		std::cout << "未成功获得IP地址，系统将以代号999在本地显示你的编号。" << std::endl;;
 	}
+	if (m_mode == 1)
+		peer.sin_addr.S_un.S_addr = INADDR_ANY;
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------
@@ -260,7 +266,6 @@ void p2pserver::WaitConnec()
 		clients.sockets[clients.clients_num] = accept(server_socket, (sockaddr*)(clients.addrs_list + clients.clients_num), clients.addrs_len + clients.clients_num);
 
 		if (clients.sockets[clients.clients_num] != SOCKET_ERROR) {
-			/*坑位，改端口号是否会影响TCP的链接*/
 			recv(clients.sockets[clients.clients_num], (char*)&clients.addrs_list[clients.clients_num].sin_port, sizeof(USHORT), 0);
 			clients.mutex_num.lock();
 			std::thread* p1 = new std::thread(&p2pserver::Thread_ProcConnec, this, clients.clients_num);
@@ -344,4 +349,12 @@ p2pClientInfo::p2pClientInfo() : clients_num(0)
 	for (int& i : addrs_len)
 		i = sizeof(sockaddr_in);
 
+}
+
+bool p2pClientInfo::Is_addr_equal(const sockaddr_in A, const sockaddr_in& B, const int& mode)
+{
+	if (mode == 1)
+		return A.sin_port == B.sin_port;
+	else
+		return (A.sin_addr.S_un.S_addr == B.sin_addr.S_un.S_addr && A.sin_port == B.sin_port);
 }

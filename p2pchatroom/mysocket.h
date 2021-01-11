@@ -21,6 +21,7 @@ struct p2pClientInfo
 	std::mutex mutex_num;
 	std::mutex mutex_list;
 	std::vector<std::thread*> threads;
+	bool Is_addr_equal(const sockaddr_in A, const sockaddr_in& B, const int& mode);
 
 	p2pClientInfo();
 };
@@ -35,8 +36,8 @@ protected:
 	SOCKET server_socket;
 	p2pClientInfo clients;
 
-	char recvbuff[512];
-	char sendbuff[512];
+	//char recvbuff[512];
+	//char sendbuff[512];
 public:
 	mysocket();
 	~mysocket();
@@ -46,6 +47,7 @@ class p2pclient :
 	public mysocket
 {
 private:
+	int m_mode;
 	void CreateLocalSocket();
 	void BindPeerPort();
 	void Connect_server(std::string& ip, int& port);
@@ -64,7 +66,7 @@ private:
 	int current_cmdstatue;
 	std::string recover_cout;
 public:
-	p2pclient(std::string& ip, int& port);
+	p2pclient(std::string& ip, int& port, const int& mode);
 	~p2pclient();
 };
 
