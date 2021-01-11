@@ -180,7 +180,7 @@ void p2pclient::BindPeerPort()
 	peer.sin_family = AF_INET;
 	srand((unsigned)time(NULL));
 	peer.sin_port = htons(40000 + (rand() % 10000));
-	peer.sin_addr.S_un.S_addr = INADDR_ANY;
+	this->GetIP();
 
 	if (bind(local_socket, (sockaddr*)&peer, sizeof(peer)) == -1) {
 		std::cout << "[ERRO] 绑定端口号失败！" << std::endl;
@@ -234,6 +234,21 @@ void p2pclient::Connect_server(std::string& ip, int& port)
 		std::cout << "[Client] 与服务器建立连接成功！" << std::endl;
 }
 
+void p2pclient::GetIP()
+{
+	PHOSTENT hostinfo;
+	char hostname[255] = { 0 };
+	gethostname(hostname, sizeof(hostname));
+	if (hostinfo = gethostbyname(hostname)) {
+		std::cout << "成功获得本地IP地址: " << inet_ntoa(*(struct in_addr*)*hostinfo->h_addr_list) << std::endl;
+		peer.sin_addr = *(struct in_addr*)*hostinfo->h_addr_list;
+	}
+	else {
+		peer.sin_addr.S_un.S_addr = INADDR_ANY;
+		std::cout << "未成功获得IP地址，系统将以代号999在本地显示你的编号。" << std::endl;;
+	}
+}
+
 /*--------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------*/
 
@@ -275,6 +290,7 @@ void p2pserver::Thread_ProcConnec(uint clients_No)
 	}
 
 }
+
 
 p2pserver::p2pserver(uint port)
 {

@@ -54,6 +54,7 @@ private:
 	void Sendmsgto(int id, std::string& msg);
 	void Updateclientslist();
 	void RecvMSGthread();
+	void GetIP();
 	SOCKET local_socket;
 	sockaddr_in peer;
 	uint myid;
