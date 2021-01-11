@@ -133,7 +133,7 @@ void p2pclient::RecvMSGthread()
 				}
 			}
 			mutex_showmsg.lock();
-			std::cout << '\r' << MSGbuff << std::endl;
+			std::cout << "\r                                           \r" << MSGbuff << std::endl;
 			switch (current_cmdstatue)
 			{
 			case 1:
@@ -178,7 +178,8 @@ void p2pclient::BindPeerPort()
 	}
 
 	peer.sin_family = AF_INET;
-	peer.sin_port = htons(40000 + rand() % 10000);
+	srand((unsigned)time(NULL));
+	peer.sin_port = htons(40000 + (rand() % 10000));
 	peer.sin_addr.S_un.S_addr = INADDR_ANY;
 
 	if (bind(local_socket, (sockaddr*)&peer, sizeof(peer)) == -1) {

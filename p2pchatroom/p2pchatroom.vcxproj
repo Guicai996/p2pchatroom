@@ -142,7 +142,6 @@
   <ItemGroup>
     <ClCompile Include="client.cpp" />
     <ClCompile Include="mysocket.cpp" />
-    <ClCompile Include="server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mysocket.h" />
