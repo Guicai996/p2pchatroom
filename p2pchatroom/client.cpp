@@ -10,7 +10,7 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	string authorized_ip;
-	int authorized_port = 8888;
+	int authorized_port = 35079;
 	int mode;
 
 pos_switch:

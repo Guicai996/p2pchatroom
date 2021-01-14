@@ -48,6 +48,15 @@ class p2pclient :
 {
 private:
 	int m_mode;
+	SOCKET local_socket;
+	sockaddr_in peer;
+	uint myid;
+	std::mutex mutex_showmsg;
+
+	/*1 代表ui界面， 2 你想给谁发消息: 3 调用recover_cout*/
+	int current_cmdstatue;
+	std::string recover_cout;
+private:
 	void CreateLocalSocket();
 	void BindPeerPort();
 	void Connect_server(std::string& ip, int& port);
@@ -57,14 +66,7 @@ private:
 	void Updateclientslist();
 	void RecvMSGthread();
 	void GetIP();
-	SOCKET local_socket;
-	sockaddr_in peer;
-	uint myid;
-	std::mutex mutex_showmsg;
 
-	/*1 代表ui界面， 2 你想给谁发消息: 3 调用recover_cout*/
-	int current_cmdstatue;
-	std::string recover_cout;
 public:
 	p2pclient(std::string& ip, int& port, const int& mode);
 	~p2pclient();

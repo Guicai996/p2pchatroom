@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="client.cpp" />
     <ClCompile Include="mysocket.cpp" />
     <ClCompile Include="server.cpp" />
   </ItemGroup>
